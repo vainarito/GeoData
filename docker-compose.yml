@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres
+    container_name: database
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d ${POSTGRES_DB} -U ${POSTGRES_USER}"]
+      interval: 1s
+      timeout: 5s
+      retries: 10
+    volumes:
+       - fa60a3315e76f971e4570ec6384b9852312da246738a62d725f73a25f3292103:/var/lib/postgresql/data
+    restart: always
+    ports:
+      - "5432:5432"
+  client-backend:
+    image: geo_data_backend
+    container_name: backend
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+        db:
+          condition: service_healthy
+    environment:
+      - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+
+  client-frontend:
+    image: geo_data_frontend
+    container_name: frontend
+    build:
+      context: C:\Users\vikto\Downloads\geo-client-master
+      dockerfile: Dockerfile
+    depends_on:
+      - db
+      - client-backend
+    ports:
+      - "3000:3000"
+
+volumes:
+  fa60a3315e76f971e4570ec6384b9852312da246738a62d725f73a25f3292103:
+    external: true
